@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话气泡</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="status-bar" aria-hidden="true">
+            <span class="time">--:--</span>
+            <span class="status-icons">🔋</span>
+        </div>
+        <h1 class="chat-title">思绪回声厅</h1>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="切换白天/黑夜模式">🌞</button>
+        <div class="messages" id="messageArea" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="输入消息..." aria-label="消息输入">
+            <button id="sendButton" type="button">发送</button>
+            <button id="roleToggle" class="role-button" type="button" aria-pressed="false">角色A</button>
+        </div>
+        <div class="home-indicator" aria-hidden="true"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
