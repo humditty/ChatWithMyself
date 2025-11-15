@@ -83,6 +83,8 @@
     background: #f9f9f9;
     border-radius: 5px;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 /* 消息气泡的基本样式 */
@@ -312,4 +314,47 @@ body.theme-dark {
 
 .chat-container.theme-dark .home-indicator {
     background: #3a4757;
+}
+/* 全局盒模型与页面基础 */
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+}
+.chat-container, .messages, .input-area { box-sizing: border-box; }
+.theme-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background-color: #ffffff;
+    color: #333;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    line-height: 32px;
+    text-align: center;
+    font-size: 16px;
+}
+/* 移动端自适应（小屏） */
+@media (max-width: 480px) {
+  .chat-container {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+  }
+  .theme-toggle {
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: calc(env(safe-area-inset-right) + 8px);
+  }
+  .home-indicator { display: none; }
 }
