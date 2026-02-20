@@ -14,13 +14,13 @@
         <!-- 仿真状态栏 -->
         <div class="status-bar" aria-hidden="true">
             <span class="time">09:41</span>
-            <span class="status-icons">📶 🔋</span>
+            <span class="status-icons">5G · 92%</span>
         </div>
 
         <header class="app-header">
-            <button id="clearButton" class="icon-btn" title="清空聊天记录">🗑️</button>
+            <button id="clearButton" class="icon-btn" type="button" title="清空聊天记录" aria-label="清空聊天记录">清空</button>
             <h1 class="chat-title">思绪回声厅</h1>
-            <button id="themeToggle" class="icon-btn" title="切换模式">🌞</button>
+            <button id="themeToggle" class="icon-btn" type="button" title="切换模式" aria-label="切换主题模式">昼</button>
         </header>
 
         <!-- 消息显示区 -->
@@ -28,9 +28,10 @@
 
         <!-- 输入区 -->
         <div class="input-area">
-            <button id="roleToggle" class="action-btn role-button" type="button">角色A</button>
-            <input type="text" id="messageInput" placeholder="写点什么..." autocomplete="off">
-            <button id="sendButton" class="action-btn" type="button">发送</button>
+            <button id="roleToggle" class="action-btn role-button" type="button" aria-label="当前角色A，点击切换到角色B">A</button>
+            <label for="messageInput" class="sr-only">输入消息</label>
+            <input type="text" id="messageInput" placeholder="写点什么..." autocomplete="off" aria-label="消息输入框">
+            <button id="sendButton" class="action-btn" type="button" aria-label="发送消息">发送</button>
         </div>
 
         <!-- 仿真底部横条 -->

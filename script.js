@@ -12,24 +12,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('themeToggle');
     const clearButton = document.getElementById('clearButton');
     const timeSpan = document.querySelector('.status-bar .time');
-    const chatContainer = document.querySelector('.chat-container');
+    const root = document.documentElement;
+    const MAX_MESSAGES = 300;
 
     // 状态管理
     let isRoleB = false;
     let isDark = false;
     let messages = [];
+    let isClearConfirmOpen = false;
+    let lastClearTriggerAt = 0;
 
     // --- 持久化逻辑 ---
 
     function saveMessages() {
-        localStorage.setItem('chat_history', JSON.stringify(messages));
+        try {
+            localStorage.setItem('chat_history', JSON.stringify(messages));
+        } catch (_error) {
+            // Quota exceeded or storage unavailable: keep app usable.
+            messages = messages.slice(-Math.floor(MAX_MESSAGES / 2));
+            try {
+                localStorage.setItem('chat_history', JSON.stringify(messages));
+            } catch (_retryError) {
+                // Ignore storage failures; UI state still works in-memory.
+            }
+        }
     }
 
     function loadMessages() {
-        const saved = localStorage.getItem('chat_history');
-        if (saved) {
-            messages = JSON.parse(saved);
+        let saved = null;
+        try {
+            saved = localStorage.getItem('chat_history');
+        } catch (_error) {
+            saved = null;
+        }
+
+        if (!saved) {
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(saved);
+            if (!Array.isArray(parsed)) {
+                throw new Error('Invalid history format');
+            }
+            messages = parsed
+                .filter((msg) => msg && typeof msg.text === 'string')
+                .map((msg) => ({ text: msg.text, roleB: Boolean(msg.roleB), time: Number(msg.time) || Date.now() }))
+                .slice(-MAX_MESSAGES);
             renderAllMessages();
+        } catch (_error) {
+            messages = [];
+            try {
+                localStorage.removeItem('chat_history');
+            } catch (_removeError) {
+                // Ignore storage failures.
+            }
         }
     }
 
@@ -64,6 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newMessage = { text, roleB: isRoleB, time: new Date().getTime() };
         messages.push(newMessage);
+        if (messages.length > MAX_MESSAGES) {
+            messages = messages.slice(-MAX_MESSAGES);
+        }
 
         appendMessageToUI(text, isRoleB);
         saveMessages();
@@ -75,28 +115,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleRole() {
         isRoleB = !isRoleB;
-        roleToggle.textContent = isRoleB ? '角色B' : '角色A';
+        roleToggle.textContent = isRoleB ? 'B' : 'A';
+        roleToggle.setAttribute('aria-label', isRoleB ? '当前角色B，点击切换到角色A' : '当前角色A，点击切换到角色B');
         roleToggle.classList.toggle('active', isRoleB);
         messageInput.focus();
     }
 
+    function applyTheme(darkMode) {
+        isDark = darkMode;
+        root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        themeToggle.textContent = isDark ? '夜' : '昼';
+        themeToggle.setAttribute('aria-label', isDark ? '当前深色模式，点击切换到浅色模式' : '当前浅色模式，点击切换到深色模式');
+        try {
+            localStorage.setItem('chat_theme', isDark ? 'dark' : 'light');
+        } catch (_error) {
+            // Ignore storage failures.
+        }
+    }
+
     function toggleTheme() {
-        isDark = !isDark;
-        document.body.classList.toggle('theme-dark', isDark);
-        chatContainer.classList.toggle('theme-dark', isDark);
-        themeToggle.textContent = isDark ? '🌙' : '🌞';
-        localStorage.setItem('chat_theme', isDark ? 'dark' : 'light');
+        applyTheme(!isDark);
     }
 
     function clearHistory() {
-        if (window.confirm('确定要清空所有聊天记录吗？')) {
+        const now = Date.now();
+        if (isClearConfirmOpen || now - lastClearTriggerAt < 800) {
+            return;
+        }
+        lastClearTriggerAt = now;
+        isClearConfirmOpen = true;
+        clearButton.disabled = true;
+
+        try {
+            if (!window.confirm('确定要清空所有聊天记录吗？')) {
+                return;
+            }
             // 先清空内存数据
             messages = [];
-            localStorage.removeItem('chat_history');
+            try {
+                localStorage.removeItem('chat_history');
+            } catch (_error) {
+                // Ignore storage failures.
+            }
             // 一次性重置 DOM，避免多次渲染导致的“跳动”
             messageArea.innerHTML = '';
             messageArea.scrollTop = 0;
-            console.log('History cleared successfully.');
+        } finally {
+            // 延迟恢复按钮可避免触摸设备的重复点击事件排队。
+            setTimeout(() => {
+                clearButton.disabled = false;
+            }, 150);
+            isClearConfirmOpen = false;
         }
     }
 
@@ -124,16 +193,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 初始化 ---
 
     // 初始化主题
-    const savedTheme = localStorage.getItem('chat_theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        isDark = false; // 初始为 false，通过 toggleTheme 变为 true
-        toggleTheme();
+    let savedTheme = null;
+    try {
+        savedTheme = localStorage.getItem('chat_theme');
+    } catch (_error) {
+        savedTheme = null;
     }
+    const shouldUseDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    applyTheme(shouldUseDark);
 
     // 加载消息
     loadMessages();
 
     // 设置时间
     updateTime();
-    setInterval(updateTime, 60000);
+    const timeTimer = setInterval(updateTime, 60000);
+    window.addEventListener('beforeunload', () => {
+        clearInterval(timeTimer);
+    }, { once: true });
 });
