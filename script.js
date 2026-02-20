@@ -1,170 +1,139 @@
 /**
- * 聊天应用主脚本
- * 实现了角色切换、消息发送和显示功能
+ * 思绪回声厅 - 核心逻辑
+ * 核心功能：消息持久化、主题切换、多角色对话
  */
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 获取DOM元素引用
-    const messageInput = document.getElementById('messageInput'); // 消息输入框
-    const sendButton = document.getElementById('sendButton');     // 发送按钮
-    const messageArea = document.getElementById('messageArea');   // 消息显示区域
-    const roleToggle = document.getElementById('roleToggle');     // 通过ID 'roleToggle' 获取角色切换按钮的DOM元素引用
-    const chatContainer = document.querySelector('.chat-container'); // 聊天容器
-    const themeToggle = document.getElementById('themeToggle');      // 主题切换按钮
-    const timeSpan = document.querySelector('.status-bar .time');    // 状态栏时间显示
+    // 元素引用
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const messageArea = document.getElementById('messageArea');
+    const roleToggle = document.getElementById('roleToggle');
+    const themeToggle = document.getElementById('themeToggle');
+    const clearButton = document.getElementById('clearButton');
+    const timeSpan = document.querySelector('.status-bar .time');
+    const chatContainer = document.querySelector('.chat-container');
 
-    // 角色状态标志，false表示角色A，true表示角色B
+    // 状态管理
     let isRoleB = false;
-    let isDark = false; // 主题状态标志，false表示白天（浅色），true表示黑夜（深色）
+    let isDark = false;
+    let messages = [];
 
-    /**
-     * 角色切换按钮点击事件处理
-     * 切换角色状态、更新按钮样式和文本，并将焦点设置到输入框
-     */
-    /**
-     * 更新角色切换按钮的UI状态
-     * 根据当前角色状态更新按钮样式、文本与无障碍属性
-     */
-    function updateRoleUI() {
-        roleToggle.classList.toggle('active', isRoleB);
-        roleToggle.textContent = isRoleB ? '角色B' : '角色A';
-        roleToggle.setAttribute('aria-pressed', String(isRoleB));
+    // --- 持久化逻辑 ---
+
+    function saveMessages() {
+        localStorage.setItem('chat_history', JSON.stringify(messages));
     }
 
-    /**
-     * 角色切换按钮点击事件处理
-     * 切换角色状态、更新按钮样式和文本，并将焦点设置到输入框
-     */
-    function onRoleToggle() {
+    function loadMessages() {
+        const saved = localStorage.getItem('chat_history');
+        if (saved) {
+            messages = JSON.parse(saved);
+            renderAllMessages();
+        }
+    }
+
+    function renderAllMessages() {
+        messageArea.innerHTML = '';
+        messages.forEach(msg => {
+            appendMessageToUI(msg.text, msg.roleB);
+        });
+        scrollToBottom();
+    }
+
+    // --- UI 更新逻辑 ---
+
+    function appendMessageToUI(text, roleB) {
+        const div = document.createElement('div');
+        div.className = `message ${roleB ? 'role-b' : 'role-a'}`;
+        div.textContent = text;
+        messageArea.appendChild(div);
+    }
+
+    function scrollToBottom() {
+        setTimeout(() => {
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }, 50);
+    }
+
+    // --- 交互功能 ---
+
+    function handleSend() {
+        const text = messageInput.value.trim();
+        if (!text) return;
+
+        const newMessage = { text, roleB: isRoleB, time: new Date().getTime() };
+        messages.push(newMessage);
+
+        appendMessageToUI(text, isRoleB);
+        saveMessages();
+
+        messageInput.value = '';
+        messageInput.focus();
+        scrollToBottom();
+    }
+
+    function toggleRole() {
         isRoleB = !isRoleB;
-        updateRoleUI();
+        roleToggle.textContent = isRoleB ? '角色B' : '角色A';
+        roleToggle.classList.toggle('active', isRoleB);
         messageInput.focus();
     }
 
-    // 绑定角色切换事件
-    roleToggle.addEventListener('click', onRoleToggle);
-
-    /**
-     * 更新主题UI状态
-     * 根据 isDark 切换容器的主题类，并同步按钮文本与无障碍属性
-     */
-    function updateThemeUI() {
-        chatContainer.classList.toggle('theme-dark', isDark);
-        document.body.classList.toggle('theme-dark', isDark);
-        themeToggle.textContent = isDark ? '🌙' : '🌞';
-        themeToggle.setAttribute('aria-pressed', String(isDark));
-        try {
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        } catch (_) { /* ignore storage errors */ }
-    }
-
-    /**
-     * 主题切换按钮点击事件处理
-     * 切换深浅主题并更新UI与本地存储
-     */
-    function onThemeToggle() {
+    function toggleTheme() {
         isDark = !isDark;
-        updateThemeUI();
+        document.body.classList.toggle('theme-dark', isDark);
+        chatContainer.classList.toggle('theme-dark', isDark);
+        themeToggle.textContent = isDark ? '🌙' : '🌞';
+        localStorage.setItem('chat_theme', isDark ? 'dark' : 'light');
     }
 
-    // 绑定主题切换事件
-    themeToggle.addEventListener('click', onThemeToggle);
-
-    /**
-     * 添加消息到聊天区域
-     * @param {string} text - 消息文本内容
-     * @param {boolean} isRoleB - 是否为角色B发送的消息
-     */
-    /**
-     * 添加消息到聊天区域
-     * @param {string} text - 消息文本内容
-     * @param {boolean} isRoleB - 是否为角色B发送的消息
-     */
-    function addMessage(text, isRoleB) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isRoleB ? 'role-b' : 'role-a'}`;
-        messageDiv.textContent = text;
-        messageArea.appendChild(messageDiv);
-
-        // 消息上限控制，超出则移除最早消息
-        const MAX_MESSAGES = 500;
-        if (messageArea.childElementCount > MAX_MESSAGES) {
-            messageArea.firstElementChild.remove();
-        }
-
-        // 滚动到最新消息（平滑）
-        messageArea.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-
-    /**
-     * 处理发送消息的逻辑
-     * 获取输入框内容，添加到聊天区域，并清空输入框
-     */
-    /**
-     * 处理发送消息的逻辑
-     * 获取输入框内容，添加到聊天区域，并清空输入框
-     */
-    function handleSend() {
-        const text = messageInput.value.trim();
-        if (text) {
-            addMessage(text, isRoleB);
-            messageInput.value = '';
-            messageInput.focus();
+    function clearHistory() {
+        if (window.confirm('确定要清空所有聊天记录吗？')) {
+            // 先清空内存数据
+            messages = [];
+            localStorage.removeItem('chat_history');
+            // 一次性重置 DOM，避免多次渲染导致的“跳动”
+            messageArea.innerHTML = '';
+            messageArea.scrollTop = 0;
+            console.log('History cleared successfully.');
         }
     }
 
-    // 为发送按钮添加点击事件监听器
-    // 绑定发送按钮事件
+    // --- 状态栏时间 ---
+    function updateTime() {
+        const now = new Date();
+        timeSpan.textContent = now.getHours().toString().padStart(2, '0') + ':' +
+            now.getMinutes().toString().padStart(2, '0');
+    }
+
+    // --- 事件绑定 ---
     sendButton.addEventListener('click', handleSend);
-    
-    // 为输入框添加按键事件监听器，支持按Enter键发送消息
-    /**
-     * 输入框键盘事件处理
-     * 使用 keydown，忽略输入法合成阶段，Enter 发送
-     */
-    function onInputKeyDown(e) {
-        if (e.isComposing) return;
-        if (e.key === 'Enter') {
+
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
             e.preventDefault();
             handleSend();
         }
-    }
+    });
 
-    // 绑定输入框键盘事件
-    messageInput.addEventListener('keydown', onInputKeyDown);
+    roleToggle.addEventListener('click', toggleRole);
+    themeToggle.addEventListener('click', toggleTheme);
+    clearButton.addEventListener('click', clearHistory);
 
-    // 初始化按钮UI状态
-    updateRoleUI();
-
-    /**
-     * 初始化主题状态
-     * 读取本地存储或系统偏好，设置初始 isDark 并更新UI
-     */
-    function initTheme() {
-        let saved = null;
-        try {
-            saved = localStorage.getItem('theme');
-        } catch (_) { /* ignore storage errors */ }
-        if (saved === 'dark') isDark = true;
-        else if (saved === 'light') isDark = false;
-        else isDark = true;
-        updateThemeUI();
-    }
+    // --- 初始化 ---
 
     // 初始化主题
-    initTheme();
-
-    /**
-     * 更新时间到状态栏
-     * 使用 24 小时制并补零显示，例如 09:41
-     */
-    function updateTime() {
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        if (timeSpan) timeSpan.textContent = `${hh}:${mm}`;
+    const savedTheme = localStorage.getItem('chat_theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        isDark = false; // 初始为 false，通过 toggleTheme 变为 true
+        toggleTheme();
     }
 
-    // 初始化与定时更新时间（每分钟）
+    // 加载消息
+    loadMessages();
+
+    // 设置时间
     updateTime();
-    setInterval(updateTime, 60 * 1000);
+    setInterval(updateTime, 60000);
 });

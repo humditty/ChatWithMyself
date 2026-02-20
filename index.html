@@ -1,45 +1,42 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>思绪回声厅 - 对话气泡聊天应用</title>
-    <meta name="description" content="思绪回声厅：简洁的双角色对话气泡聊天应用，支持主题切换与键盘快捷发送。">
-    <meta name="robots" content="index, follow">
-    <meta name="theme-color" content="#12161d">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="思绪回声厅 - 对话气泡聊天应用">
-    <meta property="og:description" content="简洁流畅的对话气泡聊天应用，支持白天/黑夜模式。">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="思绪回声厅 - 对话气泡聊天应用">
-    <meta name="twitter:description" content="简洁流畅的对话气泡聊天应用，支持白天/黑夜模式。">
+    <meta name="description" content="思绪回声厅：简洁的双角色对话气泡聊天应用，支持持久化存储与现代 UI。">
     <link rel="stylesheet" href="style.css">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "思绪回声厅",
-      "applicationCategory": "ChatApplication",
-      "operatingSystem": "Web"
-    }
-    </script>
 </head>
+
 <body>
     <div class="chat-container">
+        <!-- 仿真状态栏 -->
         <div class="status-bar" aria-hidden="true">
-            <span class="time">--:--</span>
-            <span class="status-icons">🔋</span>
+            <span class="time">09:41</span>
+            <span class="status-icons">📶 🔋</span>
         </div>
-        <h1 class="chat-title">思绪回声厅</h1>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="切换白天/黑夜模式">🌞</button>
-        <div class="messages" id="messageArea" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+        <header class="app-header">
+            <button id="clearButton" class="icon-btn" title="清空聊天记录">🗑️</button>
+            <h1 class="chat-title">思绪回声厅</h1>
+            <button id="themeToggle" class="icon-btn" title="切换模式">🌞</button>
+        </header>
+
+        <!-- 消息显示区 -->
+        <div class="messages" id="messageArea" role="log" aria-live="polite"></div>
+
+        <!-- 输入区 -->
         <div class="input-area">
-            <input type="text" id="messageInput" placeholder="输入消息..." aria-label="消息输入">
-            <button id="sendButton" type="button">发送</button>
-            <button id="roleToggle" class="role-button" type="button" aria-pressed="false">角色A</button>
+            <button id="roleToggle" class="action-btn role-button" type="button">角色A</button>
+            <input type="text" id="messageInput" placeholder="写点什么..." autocomplete="off">
+            <button id="sendButton" class="action-btn" type="button">发送</button>
         </div>
+
+        <!-- 仿真底部横条 -->
         <div class="home-indicator" aria-hidden="true"></div>
     </div>
     <script src="script.js"></script>
 </body>
+
 </html>
